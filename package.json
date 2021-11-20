@@ -1,0 +1,16 @@
+{
+  "name": "md-baileys",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@adiwajshing/baileys-md": "https://github.com/burstfreeze/Baileys#multi-device",
+    "@adiwajshing/keyed-db": "https://github.com/adiwajshing/keyed-db",
+    "brigadier-ts": "https://github.com/nekiak/brigadier-ts",
+    "leekslazylogger": "^4.1.3",
+    "mongoose": "^6.0.13",
+    "node-webpmux": "^3.1.0",
+    "p-ratelimit": "^1.0.1",
+    "sharp": "^0.29.3"
+  }
+}

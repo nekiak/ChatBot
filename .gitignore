@@ -1,0 +1,7 @@
+# Project exclude paths
+!/node_modules/brigadier-ts/
+/node_modules/
+/src/*.json
+.idea
+*.log
+*.lock
