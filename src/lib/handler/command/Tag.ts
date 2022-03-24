@@ -1,5 +1,5 @@
 import {Client} from "../../Client";
-import {WAMessage} from "@adiwajshing/baileys-md";
+import {WAMessage} from "@adiwajshing/baileys";
 import {cleanJid, getGroupAdmins, getMimetype, isWhatsappGroup} from "../../../utils/Utils";
 
 export enum Tag {

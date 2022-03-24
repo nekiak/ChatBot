@@ -1,26 +1,31 @@
 import makeWASocket, {
-    AuthenticationState, BaileysEventMap,
-    BufferJSON,
+    AnyMessageContent,
+    delay,
     DisconnectReason,
-    initInMemoryKeyStore, WAMessage,
-    WASocket
-} from "@adiwajshing/baileys-md";
+    fetchLatestBaileysVersion,
+    makeInMemoryStore,
+    useSingleFileAuthState,
+    BaileysEventMap,
+    WAMessage, WASocket, AnyWASocket, SignalCreds
+} from '@adiwajshing/baileys';
+import P from 'pino'
 import {pRateLimit} from "p-ratelimit";
 import EventEmitter from 'events'
-import P from "pino";
 import {readFileSync, writeFileSync} from "fs";
 import {Boom} from "@hapi/boom";
-import {CommandDispatcher} from "brigadier-ts";
+import {CommandDispatcher} from "../../brigadier-ts";
 
 export interface ClientOptions {
     ownerNumber: string | string[];
     sessionPath: string;
+    storePath: string;
 }
 
 
 export class Client extends EventEmitter {
     public ownerNumber: string | string[];
     public sessionPath: string;
+    public storePath: string;
     public sock: WASocket;
     limit: <T>(fn: () => Promise<T>) => Promise<T>;
     dispatcher: CommandDispatcher<WAMessage>;
@@ -28,6 +33,7 @@ export class Client extends EventEmitter {
     constructor(options: ClientOptions) {
         super();
         this.ownerNumber = options.ownerNumber;
+        this.storePath = options.storePath;
         this.sessionPath = options.sessionPath;
         this.limit = pRateLimit({
             interval: 1500,             // 1000 ms == 1 second
@@ -37,71 +43,65 @@ export class Client extends EventEmitter {
         this.dispatcher = new CommandDispatcher<WAMessage>();
         this.init()
         setTimeout(() => {
-            this.emit("ready" as unknown as keyof BaileysEventMap, null)
+            this.emit("ready" as unknown as keyof BaileysEventMap<SignalCreds>, null)
         }, 1500);
     }
 
 
-    init () {
-        // load authentication state from a file
-        const loadState = () => {
-            let state: AuthenticationState | undefined = undefined
-            try {
-                const value = JSON.parse(
-                    readFileSync(this.sessionPath, { encoding: 'utf-8' }),
-                    BufferJSON.reviver
-                )
-                state = {
-                    creds: value.creds,
-                    // stores pre-keys, session & other keys in a JSON object
-                    // we deserialize it here
-                    keys: initInMemoryKeyStore(value.keys)
-                }
-            } catch{  }
-            return state
-        }
+    async init () {
+        const store = makeInMemoryStore({ logger: P().child({ level: 'debug', stream: 'store' }) })
+        store.readFromFile(this.storePath)
+// save every 10s
+        setInterval(() => {
+            store.writeToFile(this.storePath)
+        }, 10_000)
 
-        const saveState = (state?: any) => {
-            state = this.sock?.authState
-            writeFileSync(
-                this.sessionPath,
-                // BufferJSON replacer utility saves buffers nicely
-                JSON.stringify(state, BufferJSON.replacer, 2)
-            )
-        }
+        const { state, saveState } = useSingleFileAuthState(this.sessionPath)
 
-        const startSock = () => {
+// start a connection
+        const startSock = async() => {
+            // fetch latest version of WA Web
+            const { version, isLatest } = await fetchLatestBaileysVersion()
+            console.log(`using WA v${version.join('.')}, isLatest: ${isLatest}`)
+
             const sock = makeWASocket({
-                logger: P({ level: 'info' }),
+                version,
+                logger: P({ level: 'silent' }),
                 printQRInTerminal: true,
-                auth: loadState()
-            })
-            sock.ev.on('messages.update', m => {
-                let msg = m[0];
-                if (msg.key.remoteJid !== 'status@broadcast') {
-                    saveState()
+                auth: state,
+                // implement to handle retries
+                getMessage: async key => {
+                    return {
+                        conversation: 'hello'
+                    }
                 }
             })
 
-            sock.ev.on('auth-state.update', () => saveState())
+            store.bind(sock.ev)
+
+            // listen for when the auth credentials is updated
+            sock.ev.on('creds.update', saveState)
+
             return sock
         }
 
-        this.sock = startSock()
+        this.sock = await startSock()
 
-        this.sock.ev.on('connection.update', (update) => {
+        this.sock.ev.on("connection.update", async (update) => {
             const { connection, lastDisconnect } = update
-            if (connection === 'close') {
+            if(connection === 'close') {
                 // reconnect if not logged out
                 if((lastDisconnect.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut) {
-                    this.sock = startSock()
-                    this.sock.ev.emit("ready" as unknown as keyof BaileysEventMap, null)
+                    this.sock = await startSock()
+                    this.sock.ev.emit("ready" as unknown as keyof BaileysEventMap<SignalCreds>, null)
                 } else {
-                    console.log('connection closed')
+                    console.log('Connection closed. You are logged out.')
                 }
             }
+
         })
     }
+
 
     isOwner(jid: string) {
         if (typeof this.ownerNumber === 'string') {

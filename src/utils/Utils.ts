@@ -1,4 +1,6 @@
-import {GroupParticipant, WAMessage, WASocket} from "@adiwajshing/baileys-md";
+import {GroupParticipant, WAMessage, WASocket} from "@adiwajshing/baileys";
+import {CollectorFilter, CollectorOptions} from "../lib/struct/Collector";
+import {MessageCollector} from "../lib/handler/MessageCollector";
 
 export function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -14,6 +16,10 @@ export async function getGroupAdmins(sock: WASocket, jid: string): Promise<Group
 
 export function cleanJid(jid: string): string {
   return jid.replace(/:([\d]*)/, "")
+}
+
+export function createMessageCollector(c : WAMessage, filter : CollectorFilter<[WAMessage]>, options : CollectorOptions, sock: WASocket) : MessageCollector {
+    return new MessageCollector(c, filter, options, sock);
 }
 
 export function getMimetype(message: WAMessage): string {

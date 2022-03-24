@@ -7,10 +7,13 @@ import mongo from "mongoose"
 export class NekiakBot extends Client {
     commandHandler: CommandHandler;
     listenerHandler: ListenerHandler;
+
     constructor() {
         super({
-            ownerNumber: config.owner_numbers,
-            sessionPath: config.session_path
+            storePath: config["store_path"],
+            ownerNumber: config["owner_numbers"],
+            sessionPath: config["session_path"],
+
         });
 
         super.on("ready", async () => {
@@ -29,5 +32,6 @@ export class NekiakBot extends Client {
         });
     }
 }
+
 
 new NekiakBot();

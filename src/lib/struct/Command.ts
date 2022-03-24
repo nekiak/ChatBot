@@ -6,7 +6,7 @@ import {
     downloadContentFromMessage,
     MiscMessageGenerationOptions, proto,
     WAMessage
-} from "@adiwajshing/baileys-md";
+} from "@adiwajshing/baileys";
 import {getMimetype} from "../../utils/Utils";
 
 
@@ -64,8 +64,8 @@ export class Command extends Module {
         }
     }
 
-    async sendMessage(jid: string, content: AnyMessageContent, options: MiscMessageGenerationOptions = {ephemeralExpiration: 1}) {
-        await this.client.limit(() => this.client.sock.sendMessage(jid, content, options));
+    async sendMessage(jid: string, content: AnyMessageContent, options: MiscMessageGenerationOptions = {ephemeralExpiration: 10000}) {
+        return await this.client.limit(() => this.client.sock.sendMessage(jid, content, options));
     }
 }
 

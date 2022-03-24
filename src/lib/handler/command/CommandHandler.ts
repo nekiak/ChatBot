@@ -1,5 +1,5 @@
 import {Handler, HandlerOptions} from "../../Handler";
-import {WAMessage, WASocket} from "@adiwajshing/baileys-md";
+import {WAMessage, WASocket} from "@adiwajshing/baileys";
 import { Client } from "../../index"
 import {Command} from "../../struct/Command";
 import {Tag} from "./Tag";

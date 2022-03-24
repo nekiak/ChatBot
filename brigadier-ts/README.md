@@ -9,25 +9,28 @@ npm install brigadier-ts
 ## Usage
 
 #### Example using a command source
+
 ```js
 import {
     CommandDispatcher,
     IntegerArgumentType,
     literal,
     argument
-} from "brigadier-ts";
+} from "./internal";
 
 class CommandSource {
     private a: number;
+
     constructor(a: number) {
         this.a = a;
     }
+
     getA(): number {
         return this.a;
     }
 }
 
-const dispatcher = new CommandDispatcher<CommandSource>();
+const dispatcher = new CommandDispatcher < CommandSource > ();
 dispatcher.register(literal("random")
     .executes(c => 4)
 );

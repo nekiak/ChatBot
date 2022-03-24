@@ -1,7 +1,7 @@
 import {Client} from "./Client";
 import {Handler} from "./Handler";
-import {CommandDispatcher} from "brigadier-ts";
-import {WAMessage} from "@adiwajshing/baileys-md";
+import {CommandDispatcher} from "../../brigadier-ts";
+import {WAMessage} from "@adiwajshing/baileys";
 
 export interface ModuleOptions {
     id: string

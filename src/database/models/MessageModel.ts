@@ -1,5 +1,5 @@
 import {model, Schema} from "mongoose";
-import {WAMessage} from "@adiwajshing/baileys-md";
+import {WAMessage} from "@adiwajshing/baileys";
 
 export interface IMessageModel {
     message: Object

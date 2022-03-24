@@ -1,5 +1,5 @@
 import {Module, ModuleOptions} from "../Module";
-import {BaileysEventMap} from "@adiwajshing/baileys-md";
+import {BaileysEventMap} from "@adiwajshing/baileys";
 import {NotImplementedError} from "../error/NotImplementedError";
 
 interface IListenerOptions extends ModuleOptions {

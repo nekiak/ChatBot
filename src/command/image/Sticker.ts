@@ -1,6 +1,6 @@
 import {Command} from "../../lib/struct/Command";
-import {literal} from "brigadier-ts";
-import {WAMessage} from "@adiwajshing/baileys-md";
+import {literal} from "../../../brigadier-ts";
+import {WAMessage} from "@adiwajshing/baileys";
 import {formatToSticker} from "../../utils/MediaUtils";
 import {cleanJid, getMimetype} from "../../utils/Utils";
 
