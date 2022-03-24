@@ -20,10 +20,10 @@ export namespace Tag {
         let hasMedia = false;
         for (const tag of tags ?? []) {
             const mimetype = getMimetype(message);
-            const botNumber = cleanJid(client.sock.user.id)
+            const botNumber = client.sock.user.id
             const isGroup = isWhatsappGroup(message.key.remoteJid)
             const admins = isGroup ? (await getGroupAdmins(client.sock, message.key.remoteJid)).map(a => a.id) : [];
-            const jid = cleanJid(isGroup ? message.participant : message.key.remoteJid);
+            const jid = message.key.remoteJid;
             if (tag === Tag.dmOnly && isGroup) missingTags.push(Tag.dmOnly);
             if (tag === Tag.groupOnly && !isGroup) missingTags.push(Tag.groupOnly);
             if (tag === Tag.clientAdminOnly && !admins.includes(botNumber)) missingTags.push(Tag.clientAdminOnly);
