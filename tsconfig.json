@@ -1,14 +1,22 @@
 {
   "compilerOptions": {
+    "lib": [
+      "es5", "es6", "dom", "dom.iterable"
+    ],
     "module": "commonjs",
     "target": "es2020",
     "moduleResolution": "node",
     "sourceMap": true,
     "strict": false,
+    "outDir": "build",
     "esModuleInterop": true,
     "resolveJsonModule": true
   },
+  "include": [
+    "src"
+  ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "brigadier-ts"
   ]
 }
