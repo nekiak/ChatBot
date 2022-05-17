@@ -1,19 +1,27 @@
 import makeWASocket, {
-    AnyMessageContent,
-    delay,
     DisconnectReason,
     fetchLatestBaileysVersion,
     makeInMemoryStore,
     useSingleFileAuthState,
     BaileysEventMap,
-    WAMessage, WASocket, AnyWASocket, SignalCreds
+    WAMessage,
+    WASocket,
+    AnyWASocket,
+    SignalCreds,
+    proto,
+    Contact,
+    GroupMetadata,
+    ConnectionState,
+    WAMessageCursor,
+    PresenceData, WAMessageKey, BaileysEventEmitter
 } from '@adiwajshing/baileys';
 import P from 'pino'
 import {pRateLimit} from "p-ratelimit";
 import EventEmitter from 'events'
-import {readFileSync, writeFileSync} from "fs";
 import {Boom} from "@hapi/boom";
 import {CommandDispatcher} from "../../brigadier-ts";
+import KeyedDB from "@adiwajshing/keyed-db";
+import Chat = proto.Chat;
 
 export interface ClientOptions {
     ownerNumber: string | string[];
@@ -24,8 +32,15 @@ export interface ClientOptions {
 
 export class Client extends EventEmitter {
     public ownerNumber: string | string[];
+    public prefix: string
     public sessionPath: string;
     public storePath: string;
+    public store:  {
+        chats: KeyedDB<Chat, string>; contacts: { [p: string]: Contact }; messages: { [p: string]: { array: proto.IWebMessageInfo[]; get: (id: string) => proto.IWebMessageInfo; upsert: (item: proto.IWebMessageInfo, mode: ("append" | "prepend")) => void; update: (item: proto.IWebMessageInfo) => boolean; remove: (item: proto.IWebMessageInfo) => boolean; updateAssign: (id: string, update: Partial<proto.IWebMessageInfo>) => boolean; clear: () => void; filter: (contain: (item: proto.IWebMessageInfo) => boolean) => void; toJSON: () => proto.IWebMessageInfo[]; fromJSON: (newItems: proto.IWebMessageInfo[]) => void } }; groupMetadata: { [p: string]: GroupMetadata }; state: ConnectionState; presences: { [p: string]: { [p: string]: PresenceData } }; bind: (ev: BaileysEventEmitter) => void; loadMessages: (jid: string, count: number, cursor: WAMessageCursor, sock: (undefined)) => Promise<proto.IWebMessageInfo[]>; loadMessage: (jid: string, id: string, sock: (any)) => Promise<proto.IWebMessageInfo>; mostRecentMessage: (jid: string, sock: (undefined)) => Promise<proto.IWebMessageInfo>; fetchImageUrl: (jid: string, sock: (AnyWASocket | undefined)) => Promise<string>; fetchGroupMetadata: (jid: string, sock: (AnyWASocket | undefined)) => Promise<GroupMetadata>; fetchBroadcastListInfo: (jid: string, sock: (undefined)) => Promise<GroupMetadata>; fetchMessageReceipts: ({
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         remoteJid,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         id
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     }: WAMessageKey, sock: (undefined)) => Promise<proto.IUserReceipt[]>; toJSON: () => { chats: KeyedDB<Chat, string>; contacts: { [p: string]: Contact }; messages: { [p: string]: { array: proto.IWebMessageInfo[]; get: (id: string) => proto.IWebMessageInfo; upsert: (item: proto.IWebMessageInfo, mode: ("append" | "prepend")) => void; update: (item: proto.IWebMessageInfo) => boolean; remove: (item: proto.IWebMessageInfo) => boolean; updateAssign: (id: string, update: Partial<proto.IWebMessageInfo>) => boolean; clear: () => void; filter: (contain: (item: proto.IWebMessageInfo) => boolean) => void; toJSON: () => proto.IWebMessageInfo[]; fromJSON: (newItems: proto.IWebMessageInfo[]) => void } } }; fromJSON: (json: { chats: Chat[]; contacts: { [p: string]: Contact }; messages: { [p: string]: proto.IWebMessageInfo[] } }) => void; writeToFile: (path: string) => void; readFromFile: (path: string) => void
+    };
     public sock: WASocket;
     limit: <T>(fn: () => Promise<T>) => Promise<T>;
     dispatcher: CommandDispatcher<WAMessage>;
@@ -36,7 +51,7 @@ export class Client extends EventEmitter {
         this.storePath = options.storePath;
         this.sessionPath = options.sessionPath;
         this.limit = pRateLimit({
-            interval: 1500,             // 1000 ms == 1 second
+            interval: 2000,             // 1000 ms == 1 second
             rate: 1,                   // 30 API calls per interval
             concurrency: 1,            // no more than 10 running at once
         });
@@ -49,11 +64,11 @@ export class Client extends EventEmitter {
 
 
     async init () {
-        const store = makeInMemoryStore({ logger: P().child({ level: 'debug', stream: 'store' }) })
-        store.readFromFile(this.storePath)
+        this.store = makeInMemoryStore({ logger: P().child({ level: 'debug', stream: 'store' }) }) as any
+        this.store.readFromFile(this.storePath)
 // save every 10s
         setInterval(() => {
-            store.writeToFile(this.storePath)
+            this.store.writeToFile(this.storePath)
         }, 10_000)
 
         const { state, saveState } = useSingleFileAuthState(this.sessionPath)
@@ -69,17 +84,17 @@ export class Client extends EventEmitter {
                 logger: P({ level: 'silent' }),
                 printQRInTerminal: true,
                 auth: state,
-                // implement to handle retries
                 getMessage: async key => {
                     return {
-                        conversation: 'hello'
+
                     }
                 }
+                // cuando se reconecta
             })
 
-            store.bind(sock.ev)
+            this.store.bind(sock.ev)
 
-            // listen for when the auth credentials is updated
+            // para cuando las credenciales de autenticacion cambian
             sock.ev.on('creds.update', saveState)
 
             return sock

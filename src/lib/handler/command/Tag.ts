@@ -10,6 +10,7 @@ export enum Tag {
     clientAdminOnly = "clientAdminOnly",
     needsStaticSticker = "needsStaticSticker",
     needsAnimatedSticker = "needsAnimatedSticker",
+    needsQuotedMessage = "needsQuotedMessage",
     needsImage = "needsImage",
     needsVideo = "needsVideo"
 }
@@ -23,21 +24,27 @@ export namespace Tag {
             const botNumber = client.sock.user.id
             const isGroup = isWhatsappGroup(message.key.remoteJid)
             const admins = isGroup ? (await getGroupAdmins(client.sock, message.key.remoteJid)).map(a => a.id) : [];
-            const jid = message.key.remoteJid;
+            const jid = message.key.remoteJid.endsWith("g.us") ? message.key.participant : message.key.remoteJid;
             if (tag === Tag.dmOnly && isGroup) missingTags.push(Tag.dmOnly);
             if (tag === Tag.groupOnly && !isGroup) missingTags.push(Tag.groupOnly);
             if (tag === Tag.clientAdminOnly && !admins.includes(botNumber)) missingTags.push(Tag.clientAdminOnly);
             if (tag === Tag.adminOnly && !admins.includes(jid)) missingTags.push(Tag.adminOnly);
             if (tag === Tag.devOnly && !client.isOwner(jid)) missingTags.push(Tag.devOnly);
 
-
-            if (tag === Tag.needsStaticSticker || tag === Tag.needsAnimatedSticker) {
-                if (mimetype === "image/webp") {
-                    const isAnim = message.message.extendedTextMessage.contextInfo.quotedMessage.stickerMessage.isAnimated;
-                    if (tag === Tag.needsAnimatedSticker && isAnim) hasMedia = true;
-                    if (tag === Tag.needsStaticSticker && !isAnim) hasMedia = true;
-                } else {
-                    missingTags.push(tag)
+            if (mimetype === "image/webp") {
+                const isAnim = message.message.extendedTextMessage.contextInfo.quotedMessage.stickerMessage.firstFrameSidecar.length > 0;
+                if (tag === Tag.needsAnimatedSticker) {
+                    if (isAnim) {
+                        hasMedia = true;
+                    } else {
+                        missingTags.push(tag)
+                    }
+                } else if (tag === Tag.needsStaticSticker) {
+                    if (!isAnim) {
+                        hasMedia = true;
+                    } else {
+                        missingTags.push(tag)
+                    }
                 }
             }
 
@@ -46,6 +53,10 @@ export namespace Tag {
                 else missingTags.push(Tag.needsImage);
             }
 
+            if (tag === Tag.needsQuotedMessage) {
+                const quotedMessage = message.message?.extendedTextMessage?.contextInfo?.quotedMessage;
+                if (!quotedMessage) missingTags.push(Tag.needsQuotedMessage);
+            }
             if (tag === Tag.needsVideo)
                 if (mimetype === "video/mp4") hasMedia = true;
                 else missingTags.push(Tag.needsVideo);
@@ -76,6 +87,9 @@ export namespace Tag {
                     break;
                 case Tag.needsImage:
                     message += "Necesita que se adjunte/responda una imagen!";
+                    break;
+                case Tag.needsQuotedMessage:
+                    message += "Necesita que se responda a un mensaje";
                     break;
                 case Tag.needsVideo:
                     message += "Necesita que se adjunte/responda un video!";

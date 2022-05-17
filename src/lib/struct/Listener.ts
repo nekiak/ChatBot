@@ -3,11 +3,11 @@ import {BaileysEventMap} from "@adiwajshing/baileys";
 import {NotImplementedError} from "../error/NotImplementedError";
 
 interface IListenerOptions extends ModuleOptions {
-    event: keyof BaileysEventMap;
+    event: keyof BaileysEventMap<string>;
 }
 
 export class Listener extends Module {
-    event: keyof BaileysEventMap;
+    event: keyof BaileysEventMap<string>;
 
     constructor(options: IListenerOptions) {
         super(options);

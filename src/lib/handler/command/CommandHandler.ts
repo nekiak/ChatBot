@@ -19,7 +19,8 @@ export class CommandHandler extends Handler {
 
     constructor(client: Client, options: ICommandHandler) {
         super(client, options);
-        this.prefix = options.prefix;
+        this.prefix = options.prefix
+        this.client.prefix = options.prefix
         this.client = client;
         this.cooldownUsers = [];
         this.cooldownBlockedUsers = [];
@@ -37,8 +38,10 @@ export class CommandHandler extends Handler {
     init() {
         this.client.sock.ev.on("messages.upsert", msg => {
             const message = msg.messages[0];
+
             let args: string[] | string = (
-                (message.message?.imageMessage?.caption ?? message.message?.conversation) ||
+                (message.message?.listResponseMessage?.singleSelectReply.selectedRowId ??message.message?.imageMessage?.caption ?? message.message?.conversation ??
+                     message.message?.buttonsResponseMessage?.selectedDisplayText) ||
                 (message.message?.extendedTextMessage?.text ?? message.message?.videoMessage?.caption)
             )!;
             if (!args) return;
@@ -59,19 +62,21 @@ export class CommandHandler extends Handler {
         if (!await this.cooldown(message, command)) { return; }
         const check = await Tag.check(this.client, message, command.options.tags);
         if (check.length > 0) {
+            if (check.includes(Tag.devOnly)) return;
             await this.client.sock.sendMessage(message.key.remoteJid, {text: (await createMessage(check))})
             return;
         }
 
         try {
-            this.client.dispatcher.execute(command.id, message);
+            const cmdString = args.length > 0 ? `${command.id} ${args.join(" ")}` : command.id.trim();
+            this.client.dispatcher.execute(cmdString, message);
         } catch (err: any) {
             console.log(err)
         }
     }
 
     private cooldown(message: WAMessage, command: Command) {
-        if (this.client.isOwner(message.participant || message.key.remoteJid!)) return true;
+        if (this.client.isOwner(message.key.remoteJid.endsWith("g.us") ? message.key.participant : message.key.remoteJid)) return true;
         if (this.cooldownBlockedUsers.includes(message.key.remoteJid!)) { return false; }
         const pushCooldown = [command.id, message.key.remoteJid!];
         if (this.cooldownUsers.join(".").indexOf(pushCooldown.join()) > -1) {

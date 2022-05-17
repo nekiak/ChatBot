@@ -21,8 +21,17 @@ function generateHash(length: number): string {
     return result;
 }
 
+export async function formatMp3ToOgg(buffer: Buffer) {
+    const tempFile = `${tmpdir()}/${Math.random().toString(36)}.mp3`;
+    await fs.writeFile(tempFile, buffer);
+    await execute(`ffmpeg -i ${tempFile} -map 0:a:0 -b:a 64k ${tempFile}.ogg`);
+    const data = await fs.readFile(tempFile + ".ogg");
+    await fs.unlink(tempFile);
+    await fs.unlink(tempFile + ".ogg");
+    return data;
+}
 export async function animStickerToVideo(buf: Buffer): Promise<Buffer> {
-    const tempDir = `${tmpdir()}/${Math.floor(Math.random() * 10000000000)}`;
+    const tempDir = `${tmpdir()}/${Math.floor(Math.random() * 1000)}`;
     await fs.mkdir(tempDir);
     const tempFile = `${tempDir}/${Math.random().toString(36)}.webp`;
     await fs.writeFile(tempFile, buf).then(async() => {

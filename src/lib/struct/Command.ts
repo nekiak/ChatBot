@@ -9,12 +9,27 @@ import {
 } from "@adiwajshing/baileys";
 import {getMimetype} from "../../utils/Utils";
 
+export enum CustomMessage {
+    "ERROR" = "⚠[ERROR]️⚠️→ "
+}
 
-interface ICommandOptions extends ModuleOptions {
+export enum Category {
+    IMAGEN = "IMAGEN",
+    MISCELANEO = "MISCELANEO",
+    PENES = "PENES",
+    ANIMANGA = "ANIMANGA",
+    HIDDEN = "HIDDEN",
+    STATS = "STATS",
+    ADMINISTRACION = "ADMINISTRACION"
+
+}
+
+export interface ICommandOptions extends ModuleOptions {
     description: string;
     usage: string;
     aliases: Array<string>;
-    cooldown: number;
+    cooldown?: number;
+    category: Category
     tags?: Array<Tag | keyof typeof Tag | string>;
 }
 
@@ -23,7 +38,7 @@ export class Command extends Module {
     constructor(options: ICommandOptions) {
         super(options);
         this.options = options;
-        this.options.cooldown = options.cooldown || 5
+        this.options.cooldown = options.cooldown || 1
     }
 
 
@@ -59,13 +74,18 @@ export class Command extends Module {
             for await(const chunk of stream) {
                 buffer = Buffer.concat([buffer, chunk])
             }
-            const isAnimSticker = mimetype === "image/webp" ? quotedMessage.stickerMessage?.isAnimated : false;
+            const isAnimSticker = mimetype === "image/webp" ? quotedMessage.stickerMessage?.firstFrameSidecar.length > 0 : false;
             return {buffer: buffer, mimetype: mimetype, isAnimSticker: isAnimSticker}
         }
     }
 
-    async sendMessage(jid: string, content: AnyMessageContent, options: MiscMessageGenerationOptions = {ephemeralExpiration: 10000}) {
+    async sendMessage(jid: string, content: AnyMessageContent, options: MiscMessageGenerationOptions = {ephemeralExpiration: 10000000}) {
         return await this.client.limit(() => this.client.sock.sendMessage(jid, content, options));
+    }
+
+    async sendCustomMessage(id: string, message: string, type: CustomMessage) {
+        message = `${type}: ${message}`
+        await this.sendMessage(id, {text: message})
     }
 }
 
