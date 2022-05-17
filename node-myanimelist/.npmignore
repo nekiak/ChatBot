@@ -1,0 +1,15 @@
+# NPM
+node_modules
+.git
+.vscode
+.gitattributes
+.gitignore
+gulpfile.js
+tests/
+test/
+tsconfig.json
+readme.md
+src/
+dataExamples/
+docs/
+jikan_generator

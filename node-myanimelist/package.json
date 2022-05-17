@@ -1,0 +1,31 @@
+{
+  "name": "node-myanimelist",
+  "version": "4.0.0",
+  "description": "Node.js wrappers for MAL.",
+  "main": "dist/index.js",
+  "types": "typings/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "./node_modules/ts-mocha/bin/ts-mocha test/*.ts",
+    "doc": "typedoc",
+    "postdoc": "touch docs/.nojekyll"
+  },
+  "keywords": [
+    "MAL",
+    "Myanimelist",
+    "jikan",
+    "API",
+    "Wrapper"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PolyMagic/node-myanimelist.git"
+  },
+  "author": "Poly",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.25.0",
+    "url-join": "^4.0.1"
+  }
+}

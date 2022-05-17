@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2019",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "lib": ["ES2020", "DOM"],
+    "declaration": true,
+    "sourceMap": true,
+    "removeComments": false,
+    "outDir": "./dist/",
+    "declarationDir": "./typings/",
+    "experimentalDecorators": true,
+    "resolveJsonModule": true
+  },
+  "include": ["./src"]
+}
